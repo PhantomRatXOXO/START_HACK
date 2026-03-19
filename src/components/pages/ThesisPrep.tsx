@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -324,10 +324,20 @@ export function ThesisPrep({
   setSavedPaperIds: React.Dispatch<React.SetStateAction<string[]>>
 }) {
   const [completedTips, setCompletedTips] = useState<string[]>([])
+  const [savedPaperIds, setSavedPaperIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem("savedPaperIds")
+      return stored ? JSON.parse(stored) : []
+    } catch { return [] }
+  })
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTags, setActiveTags] = useState<string[]>([])
   const [showSaved, setShowSaved] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
+
+  useEffect(() => {
+    localStorage.setItem("savedPaperIds", JSON.stringify(savedPaperIds))
+  }, [savedPaperIds])
 
   const toggleTip = (id: string) => {
     setCompletedTips((prev) =>
@@ -418,18 +428,18 @@ export function ThesisPrep({
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="tips">
+      <Tabs defaultValue="literature">
         {/* Tips */}
         <TabsContent value="tips">
           <div className="flex items-center justify-between mb-4">
             <TabsList>
-              <TabsTrigger value="tips">
-                <Lightbulb className="size-4" />
-                Tips
-              </TabsTrigger>
               <TabsTrigger value="literature">
                 <BookOpen className="size-4" />
                 Literature
+              </TabsTrigger>
+              <TabsTrigger value="tips">
+                <Lightbulb className="size-4" />
+                Tips
               </TabsTrigger>
             </TabsList>
           </div>
@@ -490,13 +500,13 @@ export function ThesisPrep({
         <TabsContent value="literature">
           <div className="flex items-center justify-between mb-4">
             <TabsList>
-              <TabsTrigger value="tips">
-                <Lightbulb className="size-4" />
-                Tips
-              </TabsTrigger>
               <TabsTrigger value="literature">
                 <BookOpen className="size-4" />
                 Literature
+              </TabsTrigger>
+              <TabsTrigger value="tips">
+                <Lightbulb className="size-4" />
+                Tips
               </TabsTrigger>
             </TabsList>
           </div>
