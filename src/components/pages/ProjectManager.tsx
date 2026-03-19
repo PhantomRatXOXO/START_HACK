@@ -380,6 +380,9 @@ export function ProjectManager({ savedPaperIds = [] }: { savedPaperIds?: string[
   const totalTasks = allPhases.reduce((sum, p) => sum + allPhaseTasks(p).length, 0)
   const doneTasks = Object.values(taskStates).filter((s) => s === "done").length
   const inProgressTasks = Object.values(taskStates).filter((s) => s === "in-progress").length
+  const litTasks = allPhaseTasks(literaturePhase)
+  const papersRead = litTasks.filter((t) => (taskStates[t.id] || t.status) === "done").length
+  const totalPapers = litTasks.length
 
   return (
     <div>
@@ -395,7 +398,7 @@ export function ProjectManager({ savedPaperIds = [] }: { savedPaperIds?: string[
         {/* Main content */}
         <div>
           {/* Progress overview */}
-          <div className="mb-6 grid grid-cols-3 gap-4">
+          <div className="mb-6 grid grid-cols-4 gap-4">
             <Card>
               <CardContent className="flex items-center gap-3 py-1">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
@@ -415,6 +418,17 @@ export function ProjectManager({ savedPaperIds = [] }: { savedPaperIds?: string[
                 <div>
                   <div className="ds-title-cards">{inProgressTasks}</div>
                   <div className="ds-caption text-muted-foreground">In progress</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex items-center gap-3 py-1">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
+                  <BookOpen className="size-4" />
+                </div>
+                <div>
+                  <div className="ds-title-cards">{papersRead}</div>
+                  <div className="ds-caption text-muted-foreground">Papers read</div>
                 </div>
               </CardContent>
             </Card>
