@@ -330,10 +330,31 @@ export function ProjectManager() {
   const getTaskTitle = (task: Task) => taskTitles[task.id] || task.title
 
 
-  const allPhaseTasks = (phase: Phase) => [
-    ...phase.tasks.filter((t) => !deletedTasks.has(t.id)),
-    ...(customTasks[phase.id] || []),
-  ]
+  const statusOrder: Record<TaskStatus, number> = {
+    "done": 0,
+    "in-progress": 1,
+    "overdue": 2,
+    "upcoming": 3,
+  }
+
+  const allPhaseTasks = (phase: Phase) => {
+    const tasks = [
+      ...phase.tasks.filter((t) => !deletedTasks.has(t.id)),
+      ...(customTasks[phase.id] || []),
+    ]
+    return tasks.sort((a, b) => {
+      const statusA = taskStates[a.id] || a.status
+      const statusB = taskStates[b.id] || b.status
+      const orderDiff = statusOrder[statusA] - statusOrder[statusB]
+      if (orderDiff !== 0) return orderDiff
+      const dateA = taskDates[a.id]
+      const dateB = taskDates[b.id]
+      if (dateA && dateB) return dateA.getTime() - dateB.getTime()
+      if (dateA) return -1
+      if (dateB) return 1
+      return 0
+    })
+  }
 
   const totalTasks = PHASES.reduce((sum, p) => sum + allPhaseTasks(p).length, 0)
   const doneTasks = Object.values(taskStates).filter((s) => s === "done").length
