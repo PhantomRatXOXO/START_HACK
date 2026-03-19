@@ -1,4 +1,7 @@
 import { useState } from "react"
+import onboardingImg1 from "@/assets/Gemini_Generated_Image_7d1fmi7d1fmi7d1f.png"
+import onboardingImg2 from "@/assets/Gemini_Generated_Image_x33sdwx33sdwx33s.png"
+import onboardingImg3 from "@/assets/Gemini_Generated_Image_boiy8cboiy8cboiy.png"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -378,17 +381,31 @@ export function OnboardingWizard() {
           getFlag("D"),
         )}
 
+      {/* Hero images */}
+      <div className="mt-10 grid grid-cols-3 gap-4">
+        <div className="overflow-hidden rounded-xl">
+          <img src={onboardingImg2} alt="Academic workspace" className="w-full h-80 object-cover" />
+        </div>
+        <div className="overflow-hidden rounded-xl">
+          <img src={onboardingImg1} alt="Students collaborating" className="w-full h-80 object-cover" />
+        </div>
+        <div className="overflow-hidden rounded-xl">
+          <img src={onboardingImg3} alt="Research discussion" className="w-full h-80 object-cover" />
+        </div>
+      </div>
+
       {/* Navigation */}
-      <div className="mt-10 flex items-center justify-between">
-        <Button
-          variant="ghost"
-          onClick={goBack}
-          disabled={history.length <= 1}
-          className="rounded-full"
-        >
-          <ArrowLeft className="size-4" />
-          Back
-        </Button>
+      <div className="mt-6 flex items-center justify-between">
+        {history.length > 1 && (
+          <Button
+            variant="ghost"
+            onClick={goBack}
+            className="rounded-full"
+          >
+            <ArrowLeft className="size-4" />
+            Back
+          </Button>
+        )}
         {showContinue && (
           <Button
             onClick={handleCompanySupervisorDone}
