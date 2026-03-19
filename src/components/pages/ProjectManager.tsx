@@ -390,20 +390,15 @@ export function ProjectManager() {
                                 )}
                               </button>
 
-                              {/* Checkbox — click to toggle done */}
-                              <button
-                                onClick={() => toggleDone(task.id)}
-                                className="shrink-0 transition-all duration-200 hover:scale-110 active:scale-95"
-                                title={isDone ? "Mark as not done" : "Mark as done"}
-                              >
-                                {statusIcon(currentStatus)}
-                              </button>
-
-                              {/* Task title */}
+                              {/* Task title — click to toggle done, hover previews strikethrough */}
                               <span
-                                className={`ds-small flex-1 transition-all duration-200 ${
-                                  isDone ? "line-through text-muted-foreground" : ""
+                                onClick={() => toggleDone(task.id)}
+                                className={`ds-small flex-1 cursor-pointer select-none rounded px-1 -mx-1 py-0.5 transition-all duration-200 ${
+                                  isDone
+                                    ? "line-through decoration-2 text-muted-foreground/50 hover:bg-secondary hover:text-muted-foreground/70"
+                                    : "hover:line-through hover:decoration-[5px] hover:decoration-foreground/50 hover:bg-destructive/8 hover:text-foreground"
                                 }`}
+                                title={isDone ? "Click to mark as incomplete" : "Click to complete"}
                               >
                                 {task.title}
                               </span>
