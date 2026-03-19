@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -18,6 +19,10 @@ import {
   Users,
   Target,
   TrendingUp,
+  Search,
+  Bookmark,
+  BookmarkCheck,
+  X,
 } from "lucide-react"
 
 interface Tip {
@@ -154,54 +159,82 @@ const PAPERS: Paper[] = [
     reason: "Technical approach to building persistent AI context",
     tags: ["Conversational AI", "Context", "NLP"],
   },
+  // Extra papers that appear when searching or via tag-based suggestions
+  {
+    id: "6",
+    title: "Transformer Architectures for Domain-Specific Text Classification",
+    authors: "R. Devlin, H. Zhao",
+    year: 2025,
+    journal: "EMNLP Proceedings",
+    relevanceScore: 78,
+    reason: "Relevant NLP technique for text-based matching systems",
+    tags: ["NLP", "Transformers", "Text Classification"],
+  },
+  {
+    id: "7",
+    title: "Bias Mitigation in Automated Hiring: A Survey",
+    authors: "A. Raghavan, S. Kim",
+    year: 2024,
+    journal: "AI & Society",
+    relevanceScore: 80,
+    reason: "Addresses fairness concerns in AI-driven talent matching",
+    tags: ["AI", "Bias", "Skills-Based Hiring"],
+  },
+  {
+    id: "8",
+    title: "Network Effects in Multi-Sided Educational Platforms",
+    authors: "M. Cusumano, Y. Tanaka",
+    year: 2025,
+    journal: "Strategic Management Journal",
+    relevanceScore: 83,
+    reason: "Analyzes growth dynamics relevant to student-company platforms",
+    tags: ["Platform Economics", "Network Effects", "Higher Education"],
+  },
+  {
+    id: "9",
+    title: "Large Language Models for Academic Literature Discovery",
+    authors: "J. Wei, C. Borgeaud",
+    year: 2025,
+    journal: "Nature Machine Intelligence",
+    relevanceScore: 76,
+    reason: "LLM-based approaches to literature search and recommendation",
+    tags: ["NLP", "AI", "Literature Review"],
+  },
+  {
+    id: "10",
+    title: "Competency Frameworks in Swiss Higher Education: A Comparative Study",
+    authors: "F. Berger, L. Kühn",
+    year: 2024,
+    journal: "European Journal of Education",
+    relevanceScore: 74,
+    reason: "Maps competency models used by Swiss universities",
+    tags: ["Higher Education", "Assessment", "Competency Models"],
+  },
+  {
+    id: "11",
+    title: "Marketplace Design for Thin Markets: Lessons from Academic Job Matching",
+    authors: "A. Roth, E. Shorrer",
+    year: 2024,
+    journal: "American Economic Review",
+    relevanceScore: 81,
+    reason: "Matching theory applicable to student-thesis-company markets",
+    tags: ["Matching", "Marketplace", "Market Design"],
+  },
+  {
+    id: "12",
+    title: "Student Motivation and Self-Regulated Learning in Research Projects",
+    authors: "B. Zimmerman, K. Paulsen",
+    year: 2023,
+    journal: "Educational Psychology Review",
+    relevanceScore: 72,
+    reason: "Framework for understanding student engagement in thesis work",
+    tags: ["Student Experience", "Motivation", "Research Methods"],
+  },
 ]
 
-const REVIEWS: Review[] = [
-  {
-    id: "1",
-    studentName: "Maria S.",
-    studentInitials: "MS",
-    university: "University of St. Gallen",
-    topic: "Digital Transformation in Swiss SMEs",
-    rating: 5,
-    text: "Finding my thesis topic through Studyond's company topics was a game-changer. Instead of spending weeks searching, I found a real business problem from Swiss Post within two days. My supervisor loved that I had a concrete partner from the start.",
-    date: "Feb 2026",
-    helpful: 24,
-  },
-  {
-    id: "2",
-    studentName: "Lukas B.",
-    studentInitials: "LB",
-    university: "ETH Zurich",
-    topic: "ML Pipeline Optimization for Production Systems",
-    rating: 4,
-    text: "The matching engine suggested topics I wouldn't have found on my own. The company I worked with provided actual production data, which made my thesis significantly stronger than a purely academic one. Only downside: wish there was more support during the execution phase.",
-    date: "Jan 2026",
-    helpful: 18,
-  },
-  {
-    id: "3",
-    studentName: "Sophie K.",
-    studentInitials: "SK",
-    university: "EPFL",
-    topic: "UX Research Methods for Educational Platforms",
-    rating: 5,
-    text: "As an international student, I had zero industry contacts in Switzerland. Studyond connected me with a design team at a startup and two interview partners for my qualitative research. Could not have done this alone.",
-    date: "Dec 2025",
-    helpful: 31,
-  },
-  {
-    id: "4",
-    studentName: "Tim W.",
-    studentInitials: "TW",
-    university: "University of Zurich",
-    topic: "Behavioral Economics of Platform Adoption",
-    rating: 4,
-    text: "Good platform for finding a topic, but I really wished there was some kind of timeline planning tool. I completely underestimated how long data collection would take and had to rush the writing. A planning feature would have saved me.",
-    date: "Nov 2025",
-    helpful: 15,
-  },
-]
+
+// All unique tags across papers, used for suggestion chips
+const ALL_TAGS = Array.from(new Set(PAPERS.flatMap((p) => p.tags)))
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -218,14 +251,136 @@ function StarRating({ rating }: { rating: number }) {
   )
 }
 
+function PaperCard({
+  paper,
+  isSaved,
+  onToggleSave,
+}: {
+  paper: Paper
+  isSaved: boolean
+  onToggleSave: () => void
+}) {
+  return (
+    <Card className="transition-all duration-300 hover:shadow-md">
+      <CardContent className="flex gap-4">
+        {/* Paper info */}
+        <div className="flex-1 flex flex-col gap-2 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <FileText className="size-4 shrink-0 text-muted-foreground" />
+            <span className="ds-title-cards">{paper.title}</span>
+          </div>
+          <p className="ds-small text-muted-foreground">
+            {paper.authors} ({paper.year}) — <em>{paper.journal}</em>
+          </p>
+          <div className="ds-small text-muted-foreground flex items-start gap-1.5">
+            <Target className="size-3 mt-1 shrink-0" />
+            {paper.reason}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {paper.tags.map((tag) => (
+              <Badge key={tag} variant="outline" className="ds-caption">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        {/* Right side — relevance + actions */}
+        <div className="flex flex-row items-center gap-2 justify-center mr-8">
+          <div className="text-center">
+            <span className="text-ai text-lg font-bold">{paper.relevanceScore}%</span>
+            <div className="ds-caption text-muted-foreground">relevant</div>
+          </div>
+          <Button
+            variant={isSaved ? "default" : "outline"}
+            size="sm"
+            className="rounded-full w-1/2"
+            onClick={onToggleSave}
+          >
+            {isSaved ? (
+              <BookmarkCheck className="size-4" />
+            ) : (
+              <Bookmark className="size-4" />
+            )}
+            {isSaved ? "Saved" : "Save"}
+          </Button>
+          <Button variant="default" size="sm" className="rounded-full w-1/2">
+            <ArrowUpRight className="size-4" />
+            Open
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function ThesisPrep() {
   const [completedTips, setCompletedTips] = useState<string[]>([])
+  const [savedPaperIds, setSavedPaperIds] = useState<string[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [activeTag, setActiveTag] = useState<string | null>(null)
 
   const toggleTip = (id: string) => {
     setCompletedTips((prev) =>
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
     )
   }
+
+  const toggleSave = (id: string) => {
+    setSavedPaperIds((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    )
+  }
+
+  // Tags from saved papers — used to boost suggestions
+  const savedTags = useMemo(() => {
+    const tags = PAPERS.filter((p) => savedPaperIds.includes(p.id)).flatMap((p) => p.tags)
+    const counts: Record<string, number> = {}
+    for (const tag of tags) {
+      counts[tag] = (counts[tag] || 0) + 1
+    }
+    return counts
+  }, [savedPaperIds])
+
+  // Suggested tags based on what user has saved (YouTube-style chips)
+  const suggestedTags = useMemo(() => {
+    if (Object.keys(savedTags).length === 0) return ALL_TAGS.slice(0, 8)
+    // Sort tags: saved tags first (by frequency), then remaining
+    return [...ALL_TAGS].sort((a, b) => {
+      const aCount = savedTags[a] || 0
+      const bCount = savedTags[b] || 0
+      return bCount - aCount
+    }).slice(0, 8)
+  }, [savedTags])
+
+  // Filter and rank papers
+  const displayedPapers = useMemo(() => {
+    let papers = [...PAPERS]
+
+    // Filter by search query
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      papers = papers.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.authors.toLowerCase().includes(q) ||
+          p.tags.some((t) => t.toLowerCase().includes(q)) ||
+          p.journal.toLowerCase().includes(q)
+      )
+    }
+
+    // Filter by active tag
+    if (activeTag) {
+      papers = papers.filter((p) => p.tags.includes(activeTag))
+    }
+
+    // Sort by relevance
+    papers.sort((a, b) => b.relevanceScore - a.relevanceScore)
+
+    return papers
+  }, [searchQuery, activeTag, savedTags])
+
+  const savedPapers = PAPERS.filter((p) => savedPaperIds.includes(p.id))
 
   return (
     <div>
@@ -336,46 +491,98 @@ export function ThesisPrep() {
               </TabsTrigger>
             </TabsList>
           </div>
-          <div className="flex flex-col gap-3">
-            {PAPERS.map((paper) => (
-              <Card key={paper.id} className="transition-all duration-300 hover:shadow-md">
-                <CardContent className="flex flex-col gap-2">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <FileText className="size-4 shrink-0 text-muted-foreground" />
-                        <span className="ds-title-cards">{paper.title}</span>
-                      </div>
-                      <p className="ds-small text-muted-foreground">
-                        {paper.authors} ({paper.year}) — <em>{paper.journal}</em>
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-ai ds-badge font-semibold">{paper.relevanceScore}%</span>
-                      <div className="ds-caption text-muted-foreground">relevant</div>
-                    </div>
-                  </div>
-                  <div className="ds-small text-muted-foreground flex items-start gap-1.5">
-                    <Target className="size-3 mt-1 shrink-0" />
-                    {paper.reason}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-wrap gap-1">
-                      {paper.tags.map((tag) => (
-                        <Badge key={tag} variant="outline" className="ds-caption">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                    <Button variant="ghost" size="sm" className="rounded-full">
-                      <ArrowUpRight className="size-4" />
-                      Open
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+
+          {/* Search bar */}
+          <div className="relative w-full mb-3">
+            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search papers by title, author, keyword..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-10"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Suggestion chips (YouTube-style) */}
+          <div className="flex gap-2 overflow-x-auto pb-3 mb-3">
+            <Badge
+              variant={activeTag === null ? "default" : "outline"}
+              className="cursor-pointer shrink-0 px-3 py-1"
+              onClick={() => setActiveTag(null)}
+            >
+              All
+            </Badge>
+            {suggestedTags.map((tag) => (
+              <Badge
+                key={tag}
+                variant={activeTag === tag ? "default" : "outline"}
+                className="cursor-pointer shrink-0 px-3 py-1"
+                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
+              >
+                {tag}
+                {savedTags[tag] && (
+                  <Sparkles className="size-3 ml-1" />
+                )}
+              </Badge>
             ))}
           </div>
+
+          {/* Saved papers section */}
+          {savedPapers.length > 0 && !searchQuery && !activeTag && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <BookmarkCheck className="size-4 text-primary" />
+                <span className="ds-label">Your saved literature</span>
+                <span className="ds-caption text-muted-foreground">({savedPapers.length})</span>
+              </div>
+              <div className="flex flex-col gap-3">
+                {savedPapers.map((paper) => (
+                  <PaperCard
+                    key={`saved-${paper.id}`}
+                    paper={paper}
+                    isSaved={true}
+                    onToggleSave={() => toggleSave(paper.id)}
+                  />
+                ))}
+              </div>
+              <Separator className="mt-6" />
+              <div className="flex items-center gap-2 mt-4 mb-3">
+                <Sparkles className="size-4 text-ai-solid" />
+                <span className="ds-label">Suggested for you</span>
+                <span className="ds-caption text-muted-foreground">based on your saved papers</span>
+              </div>
+            </div>
+          )}
+
+          {/* Paper list */}
+          <div className="flex flex-col gap-3">
+            {displayedPapers
+              .filter((p) => !(!searchQuery && !activeTag && savedPaperIds.includes(p.id)))
+              .map((paper) => (
+                <PaperCard
+                  key={paper.id}
+                  paper={paper}
+                  isSaved={savedPaperIds.includes(paper.id)}
+                  onToggleSave={() => toggleSave(paper.id)}
+                />
+              ))}
+          </div>
+
+          {displayedPapers.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <BookOpen className="mb-3 size-8 text-muted-foreground" />
+              <p className="ds-title-sm text-muted-foreground">No papers found</p>
+              <p className="ds-small text-muted-foreground">Try a different search term or tag.</p>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
