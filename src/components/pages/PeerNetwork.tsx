@@ -377,7 +377,7 @@ export function PeerNetwork() {
         <div className="flex gap-6 ">
           {/* Left: scrollable peer list */}
           <div className="w-full md:w-2/5">
-            <div className="peer-scroll max-h-[70vh] overflow-y-auto p-2 pr-2 space-y-2">
+            <div className="peer-scroll max-h-[70vh] overflow-y-auto p-2 pr-4 space-y-2">
               {filtered.map((peer) => (
                 <PeerListItem
                   key={peer.id}
