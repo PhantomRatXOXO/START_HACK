@@ -21,6 +21,8 @@ import {
   Plus,
   FileText,
   MessageSquare,
+  Play,
+  Square,
 } from "lucide-react"
 
 type TaskStatus = "done" | "in-progress" | "upcoming" | "overdue"
@@ -147,13 +149,13 @@ const PHASES: Phase[] = [
 function statusIcon(status: TaskStatus) {
   switch (status) {
     case "done":
-      return <CheckCircle2 className="size-4 text-foreground" />
+      return <CheckCircle2 className="size-5 text-foreground transition-transform duration-200 scale-110" />
     case "in-progress":
-      return <Clock className="size-4 text-foreground" />
+      return <Circle className="size-5 text-foreground" />
     case "overdue":
-      return <AlertCircle className="size-4 text-destructive" />
+      return <AlertCircle className="size-5 text-destructive" />
     case "upcoming":
-      return <Circle className="size-4 text-muted-foreground" />
+      return <Circle className="size-5 text-muted-foreground/50" />
   }
 }
 
@@ -162,7 +164,12 @@ function statusLabel(status: TaskStatus) {
     case "done":
       return <Badge variant="secondary">Done</Badge>
     case "in-progress":
-      return <Badge variant="outline">In progress</Badge>
+      return (
+        <Badge variant="outline" className="border-foreground/30 text-foreground gap-1">
+          <span className="size-1.5 rounded-full bg-foreground animate-pulse inline-block" />
+          In progress
+        </Badge>
+      )
     case "overdue":
       return <Badge variant="destructive">Overdue</Badge>
     case "upcoming":
@@ -188,18 +195,27 @@ export function ProjectManager() {
     )
   }
 
-  const cycleTask = (id: string) => {
+  // Single click: toggle done ↔ previous state (upcoming or in-progress)
+  const toggleDone = (id: string) => {
     setTaskStates((prev) => {
       const current = prev[id]
-      const next: TaskStatus =
-        current === "upcoming"
-          ? "in-progress"
-          : current === "in-progress"
-          ? "done"
-          : current === "done"
-          ? "upcoming"
-          : "in-progress"
-      return { ...prev, [id]: next }
+      if (current === "done") {
+        // Restore to upcoming (or in-progress if it was in-progress before)
+        return { ...prev, [id]: "upcoming" }
+      }
+      // Mark as done from any state
+      return { ...prev, [id]: "done" }
+    })
+  }
+
+  // Start working on a task (set to in-progress)
+  const startTask = (id: string) => {
+    setTaskStates((prev) => {
+      const current = prev[id]
+      if (current === "in-progress") {
+        return { ...prev, [id]: "upcoming" }
+      }
+      return { ...prev, [id]: "in-progress" }
     })
   }
 
@@ -336,35 +352,64 @@ export function ProjectManager() {
                   </CardHeader>
                   {expanded && (
                     <CardContent>
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-0.5">
                         {phase.tasks.map((task) => {
                           const currentStatus = taskStates[task.id]
+                          const isDone = currentStatus === "done"
+                          const isInProgress = currentStatus === "in-progress"
                           return (
                             <div
                               key={task.id}
-                              className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-secondary/50 ${
-                                currentStatus === "done" ? "opacity-60" : ""
+                              className={`group flex items-center gap-2 rounded-lg px-3 py-2.5 transition-all duration-200 ${
+                                isDone
+                                  ? "opacity-50"
+                                  : isInProgress
+                                  ? "bg-secondary/60 border-l-2 border-foreground"
+                                  : "hover:bg-secondary/40"
                               }`}
                             >
+                              {/* Play/Stop button — start or stop working on task */}
                               <button
-                                onClick={() => cycleTask(task.id)}
-                                className="shrink-0 hover:opacity-70 transition-opacity"
-                              >
-                                {statusIcon(currentStatus)}
-                              </button>
-                              <span
-                                className={`ds-small flex-1 ${
-                                  currentStatus === "done" ? "line-through text-muted-foreground" : ""
+                                onClick={() => !isDone && startTask(task.id)}
+                                className={`shrink-0 transition-all duration-200 hover:scale-110 active:scale-95 ${
+                                  isDone ? "opacity-30 cursor-not-allowed" : ""
                                 }`}
+                                title={isDone ? "Complete the task first" : isInProgress ? "Stop working" : "Start working"}
+                                disabled={isDone}
+                              >
+                                {isInProgress ? (
+                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-foreground">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <rect x="9" y="9" width="6" height="6" fill="currentColor" stroke="none" />
+                                  </svg>
+                                ) : (
+                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
+                                  </svg>
+                                )}
+                              </button>
+
+                              {/* Task title — click to toggle done, hover previews strikethrough */}
+                              <span
+                                onClick={() => toggleDone(task.id)}
+                                className={`ds-small flex-1 cursor-pointer select-none rounded px-1 -mx-1 py-0.5 transition-all duration-200 ${
+                                  isDone
+                                    ? "line-through decoration-2 text-muted-foreground/50 hover:bg-secondary hover:text-muted-foreground/70"
+                                    : "hover:line-through hover:decoration-[5px] hover:decoration-foreground/50 hover:bg-destructive/8 hover:text-foreground"
+                                }`}
+                                title={isDone ? "Click to mark as incomplete" : "Click to complete"}
                               >
                                 {task.title}
                               </span>
+
+                              {/* Right side info */}
                               <div className="flex items-center gap-2 shrink-0">
                                 {task.aiSuggested && (
                                   <Sparkles className="size-3 text-ai-solid" />
                                 )}
                                 {statusLabel(currentStatus)}
-                                <span className="ds-caption text-muted-foreground">
+                                <span className="ds-caption text-muted-foreground whitespace-nowrap">
                                   {task.dueDate}
                                 </span>
                               </div>
