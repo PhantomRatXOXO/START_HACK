@@ -12,6 +12,12 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Search,
   GraduationCap,
   Building2,
@@ -23,6 +29,7 @@ import {
   Mail,
   Send,
   Sparkles,
+  ChevronDown,
 } from "lucide-react"
 
 interface CourseMatch {
@@ -39,8 +46,17 @@ interface CourseMatch {
   thesisTopicsAligned: number
   alignedTheses: string[]
   isPartner: boolean
+  canton: string
   keywords: string[]
 }
+
+const CANTONS = [
+  "Aargau", "Appenzell Ausserrhoden", "Appenzell Innerrhoden", "Basel-Landschaft",
+  "Basel-Stadt", "Bern", "Fribourg", "Geneva", "Glarus", "Graubünden",
+  "Jura", "Lucerne", "Neuchâtel", "Nidwalden", "Obwalden", "Schaffhausen",
+  "Schwyz", "Solothurn", "St. Gallen", "Thurgau", "Ticino", "Uri",
+  "Valais", "Vaud", "Zug", "Zurich",
+]
 
 const MOCK_COURSES: CourseMatch[] = [
   {
@@ -50,6 +66,7 @@ const MOCK_COURSES: CourseMatch[] = [
     degree: "Master",
     field: "Computer Science",
     location: "Zurich",
+    canton: "Zurich",
     students: 320,
     matchScore: 96,
     matchReasons: ["AI/ML focus aligns with your topics", "Strong industry thesis culture", "Previous successful placements"],
@@ -72,6 +89,7 @@ const MOCK_COURSES: CourseMatch[] = [
     degree: "Master",
     field: "Business & Economics",
     location: "St. Gallen",
+    canton: "St. Gallen",
     students: 180,
     matchScore: 91,
     matchReasons: ["Innovation management curriculum", "Mandatory industry thesis", "Strong company network"],
@@ -92,6 +110,7 @@ const MOCK_COURSES: CourseMatch[] = [
     degree: "Master",
     field: "Data Science & AI",
     location: "Lausanne",
+    canton: "Vaud",
     students: 210,
     matchScore: 89,
     matchReasons: ["Data-intensive curriculum", "Cross-disciplinary projects", "Research-oriented students"],
@@ -112,6 +131,7 @@ const MOCK_COURSES: CourseMatch[] = [
     degree: "Master",
     field: "Computer Science",
     location: "Zurich",
+    canton: "Zurich",
     students: 240,
     matchScore: 85,
     matchReasons: ["Software engineering focus", "HCI specialization available", "Good industry integration"],
@@ -132,6 +152,7 @@ const MOCK_COURSES: CourseMatch[] = [
     degree: "Bachelor",
     field: "Computer Science",
     location: "Winterthur",
+    canton: "Zurich",
     students: 280,
     matchScore: 82,
     matchReasons: ["Practice-oriented program", "Industry collaboration required", "Applied research focus"],
@@ -151,6 +172,7 @@ const MOCK_COURSES: CourseMatch[] = [
     degree: "Master",
     field: "Business & Economics",
     location: "Bern",
+    canton: "Bern",
     students: 150,
     matchScore: 78,
     matchReasons: ["Behavioral economics specialization", "Policy-oriented research", "Quantitative methods"],
@@ -320,17 +342,28 @@ export function CourseSuggestions() {
   const [search, setSearch] = useState("")
   const [degreeFilter, setDegreeFilter] = useState<string>("all")
   const [fieldFilter, setFieldFilter] = useState<string>("all")
+  const [cantonFilter, setCantonFilter] = useState<Set<string>>(new Set())
   const [selectedId, setSelectedId] = useState<string | null>(null)
+
+  const toggleCanton = (canton: string) => {
+    setCantonFilter((prev) => {
+      const next = new Set(prev)
+      if (next.has(canton)) next.delete(canton)
+      else next.add(canton)
+      return next
+    })
+  }
 
   const filtered = MOCK_COURSES.filter((c) => {
     const matchesDegree = degreeFilter === "all" || c.degree === degreeFilter
     const matchesField = fieldFilter === "all" || c.field === fieldFilter
+    const matchesLocation = cantonFilter.size === 0 || cantonFilter.has(c.canton)
     const matchesSearch =
       search === "" ||
       c.university.toLowerCase().includes(search.toLowerCase()) ||
       c.program.toLowerCase().includes(search.toLowerCase()) ||
       c.field.toLowerCase().includes(search.toLowerCase())
-    return matchesDegree && matchesField && matchesSearch
+    return matchesDegree && matchesField && matchesLocation && matchesSearch
   })
 
   const uniqueFields = [...new Set(MOCK_COURSES.map((c) => c.field))]
@@ -354,9 +387,9 @@ export function CourseSuggestions() {
         </p>
       </div>
 
-      {/* Filters */}
-      <div className="mb-4 shrink-0 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1 sm:max-w-xs">
+      {/* Search */}
+      <div className="mb-3 shrink-0">
+        <div className="relative">
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search programs..."
@@ -365,8 +398,12 @@ export function CourseSuggestions() {
             className="pl-9"
           />
         </div>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-4 shrink-0 flex flex-col gap-3 sm:flex-row sm:items-center">
         <Select value={degreeFilter} onValueChange={setDegreeFilter}>
-          <SelectTrigger className="w-auto">
+          <SelectTrigger>
             <SelectValue placeholder="Degree level" />
           </SelectTrigger>
           <SelectContent>
@@ -377,7 +414,7 @@ export function CourseSuggestions() {
           </SelectContent>
         </Select>
         <Select value={fieldFilter} onValueChange={setFieldFilter}>
-          <SelectTrigger className="w-auto">
+          <SelectTrigger>
             <SelectValue placeholder="Field" />
           </SelectTrigger>
           <SelectContent>
@@ -389,6 +426,30 @@ export function CourseSuggestions() {
             ))}
           </SelectContent>
         </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="w-[160px] justify-between gap-2">
+              {cantonFilter.size === 0
+                ? "All cantons"
+                : cantonFilter.size === 1
+                  ? [...cantonFilter][0]
+                  : `${cantonFilter.size} cantons`}
+              <ChevronDown className="size-4 text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="max-h-64 overflow-y-auto">
+            {CANTONS.map((canton) => (
+              <DropdownMenuCheckboxItem
+                key={canton}
+                checked={cantonFilter.has(canton)}
+                onCheckedChange={() => toggleCanton(canton)}
+                onSelect={(e) => e.preventDefault()}
+              >
+                {canton}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Split view */}
