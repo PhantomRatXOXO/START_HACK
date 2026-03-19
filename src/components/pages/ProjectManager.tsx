@@ -184,8 +184,7 @@ function statusLabel(status: TaskStatus) {
 
 export function ProjectManager({ savedPaperIds = [] }: { savedPaperIds?: string[] }) {
   // Build a "Literature" phase from saved papers in Thesis Prep
-  const literaturePhase: Phase | null = useMemo(() => {
-    if (savedPaperIds.length === 0) return null
+  const literaturePhase: Phase = useMemo(() => {
     const tasks: Task[] = savedPaperIds.map((paperId) => {
       const paper = PAPERS.find((p) => p.id === paperId)
       return {
@@ -204,7 +203,7 @@ export function ProjectManager({ savedPaperIds = [] }: { savedPaperIds?: string[
   }, [savedPaperIds])
 
   const allPhases = useMemo(() => {
-    return literaturePhase ? [literaturePhase, ...PHASES] : PHASES
+    return [literaturePhase, ...PHASES]
   }, [literaturePhase])
 
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["planning"])
