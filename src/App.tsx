@@ -215,7 +215,6 @@ export default function App() {
                     <PanelLeft className="size-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">Expand sidebar</TooltipContent>
               </Tooltip>
             )}
           </div>
