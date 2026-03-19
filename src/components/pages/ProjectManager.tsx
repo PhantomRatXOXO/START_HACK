@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -25,6 +25,8 @@ import {
   MessageSquare,
   Play,
   Square,
+  Trash2,
+  Pencil,
 } from "lucide-react"
 
 type TaskStatus = "done" | "in-progress" | "upcoming" | "overdue"
@@ -245,7 +247,116 @@ export function ProjectManager() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
   }
 
-  const totalTasks = PHASES.reduce((sum, p) => sum + p.tasks.length, 0)
+  // Custom tasks added by the user, keyed by phase id
+  const [customTasks, setCustomTasks] = useState<Record<string, Task[]>>({})
+  const taskCounter = useRef(0)
+
+  const addTask = (phaseId: string) => {
+    const id = `custom-${phaseId}-${taskCounter.current++}`
+    const newTask: Task = {
+      id,
+      title: "",
+      status: "upcoming",
+    }
+    setCustomTasks((prev) => ({
+      ...prev,
+      [phaseId]: [...(prev[phaseId] || []), newTask],
+    }))
+    setTaskStates((prev) => ({ ...prev, [id]: "upcoming" }))
+    setTaskDates((prev) => ({ ...prev, [id]: undefined }))
+    // Immediately enter edit mode for the new task
+    setEditingTask(id)
+    setEditingTitle("")
+    setTimeout(() => editInputRef.current?.focus(), 0)
+  }
+
+  // Track deleted default tasks
+  const [deletedTasks, setDeletedTasks] = useState<Set<string>>(new Set())
+
+  // Editing state
+  const [editingTask, setEditingTask] = useState<string | null>(null)
+  const [editingTitle, setEditingTitle] = useState("")
+  const [taskTitles, setTaskTitles] = useState<Record<string, string>>({})
+  const editInputRef = useRef<HTMLInputElement>(null)
+
+  const removeTask = (phaseId: string, taskId: string) => {
+    // Remove custom task
+    setCustomTasks((prev) => ({
+      ...prev,
+      [phaseId]: (prev[phaseId] || []).filter((t) => t.id !== taskId),
+    }))
+    // Mark default task as deleted
+    setDeletedTasks((prev) => new Set(prev).add(taskId))
+    setTaskStates((prev) => {
+      const next = { ...prev }
+      delete next[taskId]
+      return next
+    })
+    setTaskDates((prev) => {
+      const next = { ...prev }
+      delete next[taskId]
+      return next
+    })
+  }
+
+  const startEditing = (taskId: string, currentTitle: string) => {
+    setEditingTask(taskId)
+    setEditingTitle(currentTitle)
+    setTimeout(() => editInputRef.current?.focus(), 0)
+  }
+
+  const saveEdit = (taskId: string) => {
+    const trimmed = editingTitle.trim()
+    if (trimmed) {
+      setTaskTitles((prev) => ({ ...prev, [taskId]: trimmed }))
+    } else {
+      // Empty title — delete the task (find which phase it belongs to)
+      for (const phase of PHASES) {
+        // Check if it's a default task
+        if (phase.tasks.some((t) => t.id === taskId)) {
+          removeTask(phase.id, taskId)
+          break
+        }
+        // Check if it's a custom task
+        if ((customTasks[phase.id] || []).some((t) => t.id === taskId)) {
+          removeTask(phase.id, taskId)
+          break
+        }
+      }
+    }
+    setEditingTask(null)
+  }
+
+  const getTaskTitle = (task: Task) => taskTitles[task.id] || task.title
+
+
+  const statusOrder: Record<TaskStatus, number> = {
+    "done": 0,
+    "in-progress": 1,
+    "overdue": 2,
+    "upcoming": 3,
+  }
+
+  const allPhaseTasks = (phase: Phase) => {
+    const tasks = [
+      ...phase.tasks.filter((t) => !deletedTasks.has(t.id)),
+      ...(customTasks[phase.id] || []),
+    ]
+    return tasks.sort((a, b) => {
+      const statusA = taskStates[a.id] || a.status
+      const statusB = taskStates[b.id] || b.status
+      const orderDiff = statusOrder[statusA] - statusOrder[statusB]
+      if (orderDiff !== 0) return orderDiff
+      const dateA = taskDates[a.id]
+      const dateB = taskDates[b.id]
+      if (dateA && dateB) return dateA.getTime() - dateB.getTime()
+      if (dateA) return -1
+      if (dateB) return 1
+      return 0
+    })
+  }
+
+  const totalTasks = PHASES.reduce((sum, p) => sum + allPhaseTasks(p).length, 0)
   const doneTasks = Object.values(taskStates).filter((s) => s === "done").length
   const inProgressTasks = Object.values(taskStates).filter((s) => s === "in-progress").length
 
@@ -340,8 +451,9 @@ export function ProjectManager() {
           <div className="flex flex-col gap-4">
             {PHASES.map((phase) => {
               const expanded = expandedPhases.includes(phase.id)
-              const phaseDone = phase.tasks.filter((t) => taskStates[t.id] === "done").length
-              const phaseTotal = phase.tasks.length
+              const phaseTasks = allPhaseTasks(phase)
+              const phaseDone = phaseTasks.filter((t) => taskStates[t.id] === "done").length
+              const phaseTotal = phaseTasks.length
 
               return (
                 <Card key={phase.id}>
@@ -379,7 +491,7 @@ export function ProjectManager() {
                   {expanded && (
                     <CardContent>
                       <div className="flex flex-col gap-0.5">
-                        {phase.tasks.map((task) => {
+                        {phaseTasks.map((task) => {
                           const currentStatus = taskStates[task.id]
                           const isDone = currentStatus === "done"
                           const isInProgress = currentStatus === "in-progress"
@@ -419,17 +531,33 @@ export function ProjectManager() {
                               </button>
 
                               {/* Task title — click to toggle done, hover previews strikethrough */}
-                              <span
-                                onClick={() => toggleDone(task.id)}
-                                className={`ds-small flex-1 cursor-pointer select-none rounded px-1 -mx-1 py-0.5 ${
-                                  isDone
-                                    ? "line-through decoration-2 decoration-muted-foreground text-muted-foreground/50 hover:bg-secondary hover:text-muted-foreground/70"
-                                    : "hover:line-through hover:decoration-2 hover:decoration-foreground/40 hover:bg-secondary/80"
-                                }`}
-                                title={isDone ? "Click to mark as incomplete" : "Click to complete"}
-                              >
-                                {task.title}
-                              </span>
+                              {editingTask === task.id ? (
+                                <input
+                                  ref={editInputRef}
+                                  type="text"
+                                  value={editingTitle}
+                                  onChange={(e) => setEditingTitle(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === "Escape") {
+                                      e.currentTarget.blur()
+                                    }
+                                  }}
+                                  onBlur={() => saveEdit(task.id)}
+                                  className="ds-small flex-1 bg-transparent border-b border-muted-foreground/30 focus:border-foreground outline-none px-1 py-0.5"
+                                />
+                              ) : (
+                                <span
+                                  onClick={() => toggleDone(task.id)}
+                                  className={`ds-small flex-1 cursor-pointer select-none rounded px-1 -mx-1 py-0.5 ${
+                                    isDone
+                                      ? "line-through decoration-2 decoration-muted-foreground text-muted-foreground/50 hover:bg-secondary hover:text-muted-foreground/70"
+                                      : "hover:line-through hover:decoration-2 hover:decoration-foreground/40 hover:bg-secondary/80"
+                                  }`}
+                                  title={isDone ? "Click to mark as incomplete" : "Click to complete"}
+                                >
+                                  {getTaskTitle(task)}
+                                </span>
+                              )}
 
                               {/* Right side info */}
                               <div className="flex items-center shrink-0">
@@ -475,6 +603,20 @@ export function ProjectManager() {
                                     )}
                                   </PopoverContent>
                                 </Popover>
+                                <button
+                                  onClick={() => startEditing(task.id, getTaskTitle(task))}
+                                  className="opacity-0 group-hover:opacity-100 ml-2 text-muted-foreground hover:text-foreground transition-all duration-200"
+                                  title="Edit task"
+                                >
+                                  <Pencil className="size-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => removeTask(phase.id, task.id)}
+                                  className="opacity-0 group-hover:opacity-100 ml-3 text-muted-foreground hover:text-destructive transition-all duration-200"
+                                  title="Delete task"
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </button>
                               </div>
                             </div>
                           )
@@ -484,6 +626,7 @@ export function ProjectManager() {
                         variant="ghost"
                         size="sm"
                         className="mt-2 w-full rounded-full text-muted-foreground"
+                        onClick={() => addTask(phase.id)}
                       >
                         <Plus className="size-3" />
                         Add task
