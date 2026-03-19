@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -338,6 +338,43 @@ export function CourseSuggestions() {
   const selectedCourse =
     filtered.find((c) => c.id === selectedId) ?? filtered[0] ?? null
 
+  const listRef = useRef<HTMLDivElement>(null)
+
+  const selectByOffset = useCallback((offset: number) => {
+    if (filtered.length === 0) return
+    const currentIdx = filtered.findIndex((c) => c.id === selectedCourse?.id)
+    const nextIdx = Math.max(0, Math.min(filtered.length - 1, currentIdx + offset))
+    const nextCourse = filtered[nextIdx]
+    setSelectedId(nextCourse.id)
+    requestAnimationFrame(() => {
+      const container = listRef.current
+      if (!container) return
+      const card = container.children[nextIdx] as HTMLElement | undefined
+      if (!card) return
+      const containerRect = container.getBoundingClientRect()
+      const cardRect = card.getBoundingClientRect()
+      if (cardRect.bottom > containerRect.bottom) {
+        container.scrollBy({ top: cardRect.bottom - containerRect.bottom + 8, behavior: "smooth" })
+      } else if (cardRect.top < containerRect.top) {
+        container.scrollBy({ top: cardRect.top - containerRect.top - 8, behavior: "smooth" })
+      }
+    })
+  }, [filtered, selectedCourse])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault()
+        selectByOffset(1)
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault()
+        selectByOffset(-1)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [selectByOffset])
+
   return (
     <div>
       {/* Header */}
@@ -396,7 +433,7 @@ export function CourseSuggestions() {
         <div className="flex gap-6">
           {/* Left: scrollable course list */}
           <div className="w-full md:w-2/5">
-            <div className="peer-scroll max-h-[70vh] overflow-y-auto p-2 pr-4 space-y-2">
+            <div ref={listRef} className="peer-scroll max-h-[70vh] overflow-y-auto p-2 pr-4 space-y-2">
               {filtered.map((course) => (
                 <CourseListItem
                   key={course.id}
