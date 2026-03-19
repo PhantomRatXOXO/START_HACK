@@ -337,6 +337,7 @@ export function ThesisPrep({
 
   useEffect(() => {
     localStorage.setItem("savedPaperIds", JSON.stringify(savedPaperIds))
+    propSetSavedPaperIds(savedPaperIds)
   }, [savedPaperIds])
 
   const toggleTip = (id: string) => {
