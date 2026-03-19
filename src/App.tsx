@@ -92,6 +92,7 @@ export default function App() {
   const [page, setPage] = useState<Page>("onboarding")
   const [collapsed, setCollapsed] = useState(false)
   const theme = useTheme()
+  const [savedPaperIds, setSavedPaperIds] = useState<string[]>([])
 
   const renderPage = () => {
     switch (page) {
@@ -102,9 +103,9 @@ export default function App() {
       case "courses":
         return <CourseSuggestions />
       case "prep":
-        return <ThesisPrep />
+        return <ThesisPrep savedPaperIds={savedPaperIds} setSavedPaperIds={setSavedPaperIds} />
       case "project":
-        return <ProjectManager />
+        return <ProjectManager savedPaperIds={savedPaperIds} />
     }
   }
 

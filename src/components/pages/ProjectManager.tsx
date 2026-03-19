@@ -1,10 +1,11 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar as CalendarWidget } from "@/components/ui/calendar"
+import { PAPERS } from "@/components/pages/ThesisPrep"
 import {
   Sparkles,
   Calendar as CalendarIcon,
@@ -181,7 +182,31 @@ function statusLabel(status: TaskStatus) {
   }
 }
 
-export function ProjectManager() {
+export function ProjectManager({ savedPaperIds = [] }: { savedPaperIds?: string[] }) {
+  // Build a "Literature" phase from saved papers in Thesis Prep
+  const literaturePhase: Phase | null = useMemo(() => {
+    if (savedPaperIds.length === 0) return null
+    const tasks: Task[] = savedPaperIds.map((paperId) => {
+      const paper = PAPERS.find((p) => p.id === paperId)
+      return {
+        id: `lit-${paperId}`,
+        title: `Read "${paper?.title ?? "Unknown paper"}"`,
+        status: "upcoming" as TaskStatus,
+      }
+    })
+    return {
+      id: "literature",
+      name: "Literature",
+      weeks: `${savedPaperIds.length} paper${savedPaperIds.length === 1 ? "" : "s"} saved`,
+      color: "bg-foreground",
+      tasks,
+    }
+  }, [savedPaperIds])
+
+  const allPhases = useMemo(() => {
+    return literaturePhase ? [literaturePhase, ...PHASES] : PHASES
+  }, [literaturePhase])
+
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["planning"])
   const [taskStates, setTaskStates] = useState<Record<string, TaskStatus>>(() => {
     const initial: Record<string, TaskStatus> = {}
@@ -356,7 +381,7 @@ export function ProjectManager() {
     })
   }
 
-  const totalTasks = PHASES.reduce((sum, p) => sum + allPhaseTasks(p).length, 0)
+  const totalTasks = allPhases.reduce((sum, p) => sum + allPhaseTasks(p).length, 0)
   const doneTasks = Object.values(taskStates).filter((s) => s === "done").length
   const inProgressTasks = Object.values(taskStates).filter((s) => s === "in-progress").length
 
@@ -449,7 +474,7 @@ export function ProjectManager() {
 
           {/* Phase list */}
           <div className="flex flex-col gap-4">
-            {PHASES.map((phase) => {
+            {allPhases.map((phase) => {
               const expanded = expandedPhases.includes(phase.id)
               const phaseTasks = allPhaseTasks(phase)
               const phaseDone = phaseTasks.filter((t) => taskStates[t.id] === "done").length
@@ -492,7 +517,7 @@ export function ProjectManager() {
                     <CardContent>
                       <div className="flex flex-col gap-0.5">
                         {phaseTasks.map((task) => {
-                          const currentStatus = taskStates[task.id]
+                          const currentStatus = taskStates[task.id] || task.status
                           const isDone = currentStatus === "done"
                           const isInProgress = currentStatus === "in-progress"
                           const taskDate = taskDates[task.id]
