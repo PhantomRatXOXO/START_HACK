@@ -23,6 +23,8 @@ import {
   Bookmark,
   BookmarkCheck,
   X,
+  ChevronRight,
+  SlidersHorizontal,
 } from "lucide-react"
 
 interface Tip {
@@ -318,7 +320,9 @@ export function ThesisPrep() {
   const [completedTips, setCompletedTips] = useState<string[]>([])
   const [savedPaperIds, setSavedPaperIds] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState("")
-  const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [activeTags, setActiveTags] = useState<string[]>([])
+  const [showSaved, setShowSaved] = useState(false)
+  const [showFilters, setShowFilters] = useState(false)
 
   const toggleTip = (id: string) => {
     setCompletedTips((prev) =>
@@ -370,15 +374,15 @@ export function ThesisPrep() {
     }
 
     // Filter by active tag
-    if (activeTag) {
-      papers = papers.filter((p) => p.tags.includes(activeTag))
+    if (activeTags.length > 0) {
+      papers = papers.filter((p) => activeTags.some((t) => p.tags.includes(t)))
     }
 
     // Sort by relevance
     papers.sort((a, b) => b.relevanceScore - a.relevanceScore)
 
     return papers
-  }, [searchQuery, activeTag, savedTags])
+  }, [searchQuery, activeTags, savedTags])
 
   const savedPapers = PAPERS.filter((p) => savedPaperIds.includes(p.id))
 
@@ -492,68 +496,107 @@ export function ThesisPrep() {
             </TabsList>
           </div>
 
-          {/* Search bar */}
-          <div className="relative w-full mb-3">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search papers by title, author, keyword..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+          {/* Search bar with filter toggle */}
+          <div className="flex gap-2 mb-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search papers by title, author, keyword..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-10"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <Button
+                variant={showFilters || activeTags.length > 0 ? "default" : "outline"}
+                size="icon"
+                className="shrink-0"
+                onClick={() => setShowFilters(!showFilters)}
               >
-                <X className="size-4" />
-              </button>
-            )}
+                <SlidersHorizontal className="size-4" />
+              </Button>
+              {/* Dropdown filter list — multi-select */}
+              {showFilters && (
+                <div className="absolute right-0 top-full mt-1 z-10 w-56 rounded-lg border bg-background p-1 shadow-md">
+                  {activeTags.length > 0 && (
+                    <button
+                      onClick={() => setActiveTags([])}
+                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-secondary/50 transition-colors"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                  {suggestedTags.map((tag) => {
+                    const isActive = activeTags.includes(tag)
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => setActiveTags(
+                          isActive ? activeTags.filter((t) => t !== tag) : [...activeTags, tag]
+                        )}
+                        className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors ${
+                          isActive ? "bg-secondary font-medium" : "hover:bg-secondary/50"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          {isActive ? <CheckCircle2 className="size-3.5" /> : <Circle className="size-3.5 text-muted-foreground" />}
+                          {tag}
+                        </span>
+                        {savedTags[tag] && <Sparkles className="size-3 text-ai-solid" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* Suggestion chips (YouTube-style) */}
-          <div className="flex gap-2 overflow-x-auto pb-3 mb-3">
-            <Badge
-              variant={activeTag === null ? "default" : "outline"}
-              className="cursor-pointer shrink-0 px-3 py-1"
-              onClick={() => setActiveTag(null)}
-            >
-              All
-            </Badge>
-            {suggestedTags.map((tag) => (
-              <Badge
-                key={tag}
-                variant={activeTag === tag ? "default" : "outline"}
-                className="cursor-pointer shrink-0 px-3 py-1"
-                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-              >
-                {tag}
-                {savedTags[tag] && (
-                  <Sparkles className="size-3 ml-1" />
-                )}
-              </Badge>
-            ))}
-          </div>
+          {activeTags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              {activeTags.map((tag) => (
+                <Badge key={tag} variant="default" className="px-3 py-1">
+                  {tag}
+                  <button onClick={() => setActiveTags(activeTags.filter((t) => t !== tag))} className="ml-1">
+                    <X className="size-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
 
           {/* Saved papers section */}
-          {savedPapers.length > 0 && !searchQuery && !activeTag && (
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-3">
+          {!searchQuery && activeTags.length === 0 && (
+            <div className="mb-4">
+              <Button
+                variant="outline"
+                className="rounded-full mb-3"
+                onClick={() => setShowSaved(!showSaved)}
+              >
                 <BookmarkCheck className="size-4 text-primary" />
-                <span className="ds-label">Your saved literature</span>
-                <span className="ds-caption text-muted-foreground">({savedPapers.length})</span>
-              </div>
-              <div className="flex flex-col gap-3">
-                {savedPapers.map((paper) => (
-                  <PaperCard
-                    key={`saved-${paper.id}`}
-                    paper={paper}
-                    isSaved={true}
-                    onToggleSave={() => toggleSave(paper.id)}
-                  />
-                ))}
-              </div>
-              <Separator className="mt-6" />
+                Your saved literature ({savedPapers.length})
+                <ChevronRight className={`size-4 transition-transform duration-200 ${showSaved ? "rotate-90" : ""}`} />
+              </Button>
+              {showSaved && (
+                <div className="flex flex-col gap-3 mb-4">
+                  {savedPapers.map((paper) => (
+                    <PaperCard
+                      key={`saved-${paper.id}`}
+                      paper={paper}
+                      isSaved={true}
+                      onToggleSave={() => toggleSave(paper.id)}
+                    />
+                  ))}
+                </div>
+              )}
+              <Separator />
               <div className="flex items-center gap-2 mt-4 mb-3">
                 <Sparkles className="size-4 text-ai-solid" />
                 <span className="ds-label">Suggested for you</span>
@@ -565,7 +608,7 @@ export function ThesisPrep() {
           {/* Paper list */}
           <div className="flex flex-col gap-3">
             {displayedPapers
-              .filter((p) => !(!searchQuery && !activeTag && savedPaperIds.includes(p.id)))
+              .filter((p) => !(!searchQuery && activeTags.length === 0 && savedPaperIds.includes(p.id)))
               .map((paper) => (
                 <PaperCard
                   key={paper.id}
