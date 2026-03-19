@@ -317,8 +317,8 @@ function PaperCard({
 }
 
 export function ThesisPrep({
-  savedPaperIds,
-  setSavedPaperIds,
+  savedPaperIds: propSavedPaperIds,
+  setSavedPaperIds: propSetSavedPaperIds,
 }: {
   savedPaperIds: string[]
   setSavedPaperIds: React.Dispatch<React.SetStateAction<string[]>>
