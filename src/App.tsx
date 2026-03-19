@@ -177,14 +177,13 @@ export default function App() {
           <Separator />
 
           {/* Theme + Collapse */}
-          <div className="flex items-center gap-1 p-2">
+          <div className="relative flex items-center gap-1 p-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={theme.toggle}
-                  className={collapsed ? "w-full" : ""}
                 >
                   {theme.dark ? (
                     <Sun className="size-4" />
@@ -193,15 +192,12 @@ export default function App() {
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side={collapsed ? "right" : "top"}>
-                {theme.dark ? "Light mode" : "Dark mode"}
-              </TooltipContent>
             </Tooltip>
             {!collapsed && (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setCollapsed(!collapsed)}
+                onClick={() => setCollapsed(true)}
                 className="ml-auto"
               >
                 <PanelLeftClose className="size-4" />
@@ -214,7 +210,7 @@ export default function App() {
                     variant="ghost"
                     size="icon"
                     onClick={() => setCollapsed(false)}
-                    className="w-full"
+                    className="absolute left-full ml-1"
                   >
                     <PanelLeft className="size-4" />
                   </Button>
