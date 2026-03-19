@@ -335,14 +335,11 @@ export function ProjectManager({ savedPaperIds = [] }: { savedPaperIds?: string[
       setTaskTitles((prev) => ({ ...prev, [taskId]: trimmed }))
     } else {
       // Empty title — delete the task (find which phase it belongs to)
-      for (const phase of PHASES) {
-        // Check if it's a default task
-        if (phase.tasks.some((t) => t.id === taskId)) {
-          removeTask(phase.id, taskId)
-          break
-        }
-        // Check if it's a custom task
-        if ((customTasks[phase.id] || []).some((t) => t.id === taskId)) {
+      for (const phase of allPhases) {
+        if (
+          phase.tasks.some((t) => t.id === taskId) ||
+          (customTasks[phase.id] || []).some((t) => t.id === taskId)
+        ) {
           removeTask(phase.id, taskId)
           break
         }
