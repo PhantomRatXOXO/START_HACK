@@ -24,7 +24,6 @@ type Branch = "A" | "B" | "C" | "D"
 
 type Step =
   | { type: "choose-stage" }
-  | { type: "b-methodology" }
   | { type: "b-company-supervisor" }
   | { type: "action-screen"; branch: Branch }
 
@@ -33,15 +32,6 @@ interface ActionItem {
   label: string
   icon: typeof Search
 }
-
-// --- Fields that skip methodology question ---
-
-const SKIP_METHODOLOGY_FIELDS = [
-  "Computer Science",
-  "Data Science & AI",
-  "Engineering",
-  "Design & UX",
-]
 
 // --- Action sets per branch ---
 
@@ -131,13 +121,8 @@ const STAGES: { id: Branch; label: string; description: string; icon: typeof Sea
 export function OnboardingWizard() {
   const [history, setHistory] = useState<Step[]>([{ type: "choose-stage" }])
   const [branch, setBranch] = useState<Branch | null>(null)
-  const [hasMethodology, setHasMethodology] = useState<boolean | null>(null)
   const [hasCompany, setHasCompany] = useState(false)
   const [hasSupervisor, setHasSupervisor] = useState(false)
-
-  // For simplicity, assume field is known (could come from profile).
-  // We'll use a state to track it for the methodology skip logic.
-  const [field] = useState("Business & Economics") // Default; in real app this comes from profile
 
   const current = history[history.length - 1]
 
@@ -156,9 +141,6 @@ export function OnboardingWizard() {
       }
     }
     if (current.type === "b-company-supervisor") {
-      setHasMethodology(null)
-    }
-    if (current.type === "b-methodology") {
       setBranch(null)
     }
     if (current.type === "action-screen" && branch !== "B") {
@@ -172,18 +154,8 @@ export function OnboardingWizard() {
     if (id === "A" || id === "C" || id === "D") {
       pushStep({ type: "action-screen", branch: id })
     } else if (id === "B") {
-      const skipMethodology = SKIP_METHODOLOGY_FIELDS.includes(field)
-      if (skipMethodology) {
-        pushStep({ type: "b-company-supervisor" })
-      } else {
-        pushStep({ type: "b-methodology" })
-      }
+      pushStep({ type: "b-company-supervisor" })
     }
-  }
-
-  const handleMethodology = (val: boolean) => {
-    setHasMethodology(val)
-    pushStep({ type: "b-company-supervisor" })
   }
 
   const handleCompanySupervisorDone = () => {
@@ -228,31 +200,6 @@ export function OnboardingWizard() {
     </div>
   )
 
-  const renderYesNo = (
-    question: string,
-    onSelect: (val: boolean) => void,
-  ) => (
-    <div>
-      <h1 className="ds-title-lg mb-2">{question}</h1>
-      <p className="ds-body text-muted-foreground mb-8">
-        This helps us tailor your next steps.
-      </p>
-      <div className="flex gap-3 max-w-sm">
-        {[true, false].map((val) => (
-          <Card
-            key={String(val)}
-            className="flex-1 cursor-pointer transition-all duration-200 hover:ring-1 hover:ring-foreground/20"
-            onClick={() => onSelect(val)}
-          >
-            <CardContent className="flex items-center justify-center py-2">
-              <span className="ds-title-cards">{val ? "Yes" : "No"}</span>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  )
-
   const showContinue = current.type === "b-company-supervisor"
 
   return (
@@ -290,10 +237,6 @@ export function OnboardingWizard() {
           </div>
         </div>
       )}
-
-      {/* BRANCH B — Methodology question */}
-      {current.type === "b-methodology" &&
-        renderYesNo("Do you have a methodology?", handleMethodology)}
 
       {/* BRANCH B — Company & Supervisor */}
       {current.type === "b-company-supervisor" && (
