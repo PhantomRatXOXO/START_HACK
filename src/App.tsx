@@ -226,6 +226,7 @@ export default function App() {
         </aside>
 
         {/* Main content */}
+        {/* Main content */}
         <main className="flex-1 overflow-auto">
           <div className="scroll-area">
             <div className="scroll-area-content">{renderPage()}</div>

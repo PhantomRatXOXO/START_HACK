@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import {
   MessageSquare,
@@ -15,7 +15,6 @@ import {
   MapPin,
   Calendar,
   ArrowUpRight,
-  ChevronDown,
 } from "lucide-react"
 
 interface Peer {
@@ -142,98 +141,174 @@ const MOCK_PEERS: Peer[] = [
     completedYear: "2024",
     matchScore: 68,
   },
+    {
+    id: "9",
+    name: "Fabian H.",
+    initials: "FH",
+    university: "ZHAW",
+    field: "Computer Science",
+    topic: "Privacy-Preserving Student Profile Matching with Federated Learning",
+    stage: "writing",
+    stageLabel: "Completed",
+    sharedInterests: ["Privacy", "ML", "EdTech"],
+    status: "alumni",
+    completedYear: "2024",
+    matchScore: 68,
+  },
+    {
+    id: "10",
+    name: "Fabian H.",
+    initials: "FH",
+    university: "ZHAW",
+    field: "Computer Science",
+    topic: "Privacy-Preserving Student Profile Matching with Federated Learning",
+    stage: "writing",
+    stageLabel: "Completed",
+    sharedInterests: ["Privacy", "ML", "EdTech"],
+    status: "alumni",
+    completedYear: "2024",
+    matchScore: 68,
+  },
 ]
 
-function PeerCard({ peer, isExpanded, onToggle }: { peer: Peer; isExpanded: boolean; onToggle: () => void }) {
+/* ── Left-panel list item (compact) ── */
+function PeerListItem({
+  peer,
+  isSelected,
+  onClick,
+}: {
+  peer: Peer
+  isSelected: boolean
+  onClick: () => void
+}) {
   return (
     <Card
-      className="cursor-pointer transition-all duration-300 hover:shadow-md"
-      onClick={onToggle}
+      className={`cursor-pointer transition-all duration-200 hover:shadow-md ${
+        isSelected ? "ring-2 ring-primary shadow-md" : ""
+      }`}
+      onClick={onClick}
     >
-      {/* Always visible */}
-      <CardHeader className={isExpanded ? "pb-0" : undefined}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar size="lg">
-              <AvatarFallback>{peer.initials}</AvatarFallback>
+      <CardHeader className="py-3 px-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <Avatar>
+              <AvatarFallback className="text-xs">{peer.initials}</AvatarFallback>
             </Avatar>
-            <div>
-              <CardTitle className="ds-title-cards">{peer.name}</CardTitle>
-              <div className="ds-small text-muted-foreground flex items-center gap-1">
-                <MapPin className="size-3" />
-                {peer.university}
+            <div className="min-w-0">
+              <CardTitle className="ds-title-cards truncate">{peer.name}</CardTitle>
+              <div className="ds-caption text-muted-foreground flex items-center gap-1">
+                <MapPin className="size-3 shrink-0" />
+                <span className="truncate">{peer.university}</span>
               </div>
             </div>
           </div>
-
-          <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="hidden sm:flex">
-              <GraduationCap className="size-3" />
-              {peer.field}
-            </Badge>
-            <div className="text-right">
-              <span className="text-ai ds-badge font-semibold">{peer.matchScore}%</span>
-              <div className="ds-caption text-muted-foreground">match</div>
-            </div>
-            <ChevronDown
-              className={`size-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-            />
+          <div className="text-right shrink-0">
+            <span className="text-ai ds-badge font-semibold">{peer.matchScore}%</span>
+            <div className="ds-caption text-muted-foreground">match</div>
           </div>
         </div>
 
-        <p className="ds-small font-medium leading-snug mt-2">{peer.topic}</p>
+        <p className="ds-caption font-medium leading-snug mt-1.5 line-clamp-2">{peer.topic}</p>
 
-        <div className="flex flex-wrap gap-1 mt-1">
+        <div className="flex flex-wrap gap-1 mt-1.5">
           {peer.sharedInterests.map((interest) => (
-            <Badge key={interest} variant="outline" className="ds-caption">
+            <Badge key={interest} variant="outline" className="ds-caption text-[10px] px-1.5 py-0">
               {interest}
             </Badge>
           ))}
         </div>
       </CardHeader>
+    </Card>
+  )
+}
 
-      {/* Expanded details */}
-      {isExpanded && (
-        <CardContent className="flex flex-col gap-3 pt-0">
-          <Separator />
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="sm:hidden">
-              <GraduationCap className="size-3" />
-              {peer.field}
-            </Badge>
-            <Badge variant="outline">
-              {peer.status === "alumni" ? (
-                <>
-                  <Calendar className="size-3" />
-                  {peer.completedYear}
-                </>
-              ) : (
-                peer.stageLabel
-              )}
-            </Badge>
-          </div>
+/* ── Right-panel detail view (sticky) ── */
+function PeerDetail({ peer }: { peer: Peer }) {
+  return (
+    <Card className="h-fit">
+      <CardHeader>
+        <div className="flex items-center gap-4">
+          <Avatar size="lg">
+            <AvatarFallback>{peer.initials}</AvatarFallback>
+          </Avatar>
           <div>
-            <div className="ds-small text-muted-foreground mb-1 flex items-center gap-1">
-              <BookOpen className="size-3" />
-              Thesis description
+            <CardTitle className="ds-title-cards text-lg">{peer.name}</CardTitle>
+            <div className="ds-small text-muted-foreground flex items-center gap-1">
+              <MapPin className="size-3" />
+              {peer.university}
             </div>
-            <p className="ds-small text-muted-foreground leading-snug">
-              This thesis explores {peer.topic.toLowerCase()} within the field of {peer.field.toLowerCase()}.
-            </p>
           </div>
-          <Separator />
-          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <Button variant="outline" size="sm" className="flex-1 rounded-full">
-              <MessageSquare className="size-4" />
-              Message
-            </Button>
-            <Button size="sm" className="flex-1 rounded-full">
-              <ArrowUpRight className="size-4" />
-              View profile
-            </Button>
+        </div>
+        <div className="flex items-center gap-2 mt-3">
+          <span className="text-ai text-xl font-bold">{peer.matchScore}%</span>
+          <span className="ds-small text-muted-foreground">match score</span>
+        </div>
+      </CardHeader>
+
+      <CardContent className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="secondary">
+            <GraduationCap className="size-3" />
+            {peer.field}
+          </Badge>
+          <Badge variant="outline">
+            {peer.status === "alumni" ? (
+              <>
+                <Calendar className="size-3" />
+                {peer.completedYear}
+              </>
+            ) : (
+              peer.stageLabel
+            )}
+          </Badge>
+        </div>
+
+        <Separator />
+
+        <div>
+          <div className="ds-small text-muted-foreground mb-1 flex items-center gap-1">
+            <BookOpen className="size-3" />
+            Thesis topic
           </div>
-        </CardContent>
-      )}
+          <p className="ds-small font-medium leading-snug">{peer.topic}</p>
+        </div>
+
+        <div>
+          <div className="ds-small text-muted-foreground mb-1 flex items-center gap-1">
+            <BookOpen className="size-3" />
+            Description
+          </div>
+          <p className="ds-small text-muted-foreground leading-relaxed">
+            This thesis explores {peer.topic.toLowerCase()} within the field of {peer.field.toLowerCase()}.
+          </p>
+        </div>
+
+        <Separator />
+
+        <div>
+          <div className="ds-small text-muted-foreground mb-2">Shared interests</div>
+          <div className="flex flex-wrap gap-1.5">
+            {peer.sharedInterests.map((interest) => (
+              <Badge key={interest} variant="outline" className="ds-caption">
+                {interest}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <Separator />
+
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="flex-1 rounded-full">
+            <MessageSquare className="size-4" />
+            Message
+          </Button>
+          <Button size="sm" className="flex-1 rounded-full">
+            <ArrowUpRight className="size-4" />
+            View profile
+          </Button>
+        </div>
+      </CardContent>
     </Card>
   )
 }
@@ -241,10 +316,10 @@ function PeerCard({ peer, isExpanded, onToggle }: { peer: Peer; isExpanded: bool
 export function PeerNetwork() {
   const [search, setSearch] = useState("")
   const [tab, setTab] = useState("current")
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const filtered = MOCK_PEERS.filter((p) => {
-    const matchesTab = tab === "all" || p.status === tab || (tab === "current" && p.status === "current") || (tab === "alumni" && p.status === "alumni")
+    const matchesTab = tab === "all" || p.status === tab
     const matchesSearch =
       search === "" ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -256,7 +331,8 @@ export function PeerNetwork() {
     return matchesTab && matchesSearch
   })
 
-  const firstId = filtered.length > 0 ? filtered[0].id : null
+  const selectedPeer =
+    filtered.find((p) => p.id === selectedId) ?? filtered[0] ?? null
 
   const currentCount = MOCK_PEERS.filter((p) => p.status === "current").length
   const alumniCount = MOCK_PEERS.filter((p) => p.status === "alumni").length
@@ -264,7 +340,7 @@ export function PeerNetwork() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 shrink-0">
         <h1 className="ds-title-lg mb-1">Peer Network</h1>
         <p className="ds-body text-muted-foreground">
           Connect with students working on related topics — current and past.
@@ -272,7 +348,7 @@ export function PeerNetwork() {
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 shrink-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList>
@@ -296,19 +372,33 @@ export function PeerNetwork() {
         </div>
       </div>
 
-      {/* List */}
-      <div className="flex flex-col gap-3">
-        {filtered.map((peer) => (
-          <PeerCard
-            key={peer.id}
-            peer={peer}
-            isExpanded={expandedId === peer.id || (expandedId === null && peer.id === firstId)}
-            onToggle={() => setExpandedId(expandedId === peer.id || (expandedId === null && peer.id === firstId) ? "__none__" : peer.id)}
-          />
-        ))}
-      </div>
+      {/* Split view */}
+      {filtered.length > 0 ? (
+        <div className="flex gap-6 ">
+          {/* Left: scrollable peer list */}
+          <div className="w-full md:w-2/5">
+            <div className="peer-scroll max-h-[70vh] overflow-y-auto p-2 pr-2 space-y-2">
+              {filtered.map((peer) => (
+                <PeerListItem
+                  key={peer.id}
+                  peer={peer}
+                  isSelected={selectedPeer?.id === peer.id}
+                  onClick={() => setSelectedId(peer.id)}
+                />
+              ))}
+            </div>
+          </div>
 
-      {filtered.length === 0 && (
+          {/* Right: detail panel, stays in place */}
+          {selectedPeer && (
+            <div className="hidden md:block md:w-3/5">
+              <div className="peer-scroll max-h-[70vh] overflow-y-auto">
+                <PeerDetail peer={selectedPeer} />
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
         <div className="flex flex-col items-center justify-center py-16 text-center">
           <Users className="mb-4 size-10 text-muted-foreground" />
           <p className="ds-title-sm text-muted-foreground">No peers found</p>

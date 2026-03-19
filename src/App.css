@@ -214,6 +214,28 @@ html {
    Component Overrides
    ========================================================================== */
 
+/* Subtle scrollbar for peer list panels */
+.peer-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.peer-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.peer-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 9999px;
+}
+.dark .peer-scroll::-webkit-scrollbar-thumb {
+  background: hsl(0 0% 30%);
+}
+.peer-scroll {
+  scrollbar-width: auto;
+  scrollbar-color: var(--color-border) transparent;
+}
+.dark .peer-scroll {
+  scrollbar-color: hsl(0 0% 30%) transparent;
+}
+
 /* Dialog overlay: subtle blur, no heavy darkening */
 [data-slot='dialog-overlay'] {
   @apply h-screen w-screen bg-transparent opacity-30 backdrop-blur-3xl transition-all;
