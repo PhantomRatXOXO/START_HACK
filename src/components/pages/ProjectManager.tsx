@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarWidget } from "@/components/ui/calendar"
 import {
   Sparkles,
-  Calendar,
+  Calendar as CalendarIcon,
   CheckCircle2,
   Circle,
   Clock,
@@ -31,7 +33,7 @@ interface Task {
   id: string
   title: string
   status: TaskStatus
-  dueDate: string
+  dueDate?: string
   description?: string
   aiSuggested?: boolean
 }
@@ -162,7 +164,7 @@ function statusIcon(status: TaskStatus) {
 function statusLabel(status: TaskStatus) {
   switch (status) {
     case "done":
-      return <Badge variant="secondary">Done</Badge>
+      return <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Done</Badge>
     case "in-progress":
       return (
         <Badge variant="outline" className="border-foreground/30 text-foreground gap-1">
@@ -219,6 +221,30 @@ export function ProjectManager() {
     })
   }
 
+  // Date state — parse initial "Mon DD" strings into Date objects (year 2026)
+  const [taskDates, setTaskDates] = useState<Record<string, Date | undefined>>(() => {
+    const initial: Record<string, Date | undefined> = {}
+    PHASES.forEach((phase) => {
+      phase.tasks.forEach((task) => {
+        if (task.dueDate) {
+          initial[task.id] = new Date(`${task.dueDate}, 2026`)
+        } else {
+          initial[task.id] = undefined
+        }
+      })
+    })
+    return initial
+  })
+
+  const setTaskDate = (id: string, date: Date | undefined) => {
+    setTaskDates((prev) => ({ ...prev, [id]: date }))
+  }
+
+  const formatDate = (date: Date | undefined) => {
+    if (!date) return undefined
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  }
+
   const totalTasks = PHASES.reduce((sum, p) => sum + p.tasks.length, 0)
   const doneTasks = Object.values(taskStates).filter((s) => s === "done").length
   const inProgressTasks = Object.values(taskStates).filter((s) => s === "in-progress").length
@@ -263,7 +289,7 @@ export function ProjectManager() {
             <Card>
               <CardContent className="flex items-center gap-3 py-1">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
-                  <Calendar className="size-4" />
+                  <CalendarIcon className="size-4" />
                 </div>
                 <div>
                   <div className="ds-title-cards">Aug 29</div>
@@ -357,6 +383,8 @@ export function ProjectManager() {
                           const currentStatus = taskStates[task.id]
                           const isDone = currentStatus === "done"
                           const isInProgress = currentStatus === "in-progress"
+                          const taskDate = taskDates[task.id]
+                          const isOverdue = !isDone && taskDate != null && taskDate < new Date(new Date().setHours(0, 0, 0, 0))
                           return (
                             <div
                               key={task.id}
@@ -409,11 +437,44 @@ export function ProjectManager() {
                                   <Sparkles className="size-3 text-ai-solid mr-2" />
                                 )}
                                 <span className="w-24 text-right">
-                                  {statusLabel(currentStatus)}
+                                  {isOverdue ? statusLabel("overdue") : statusLabel(currentStatus)}
                                 </span>
-                                <span className="ds-caption text-muted-foreground whitespace-nowrap w-14 text-right">
-                                  {task.dueDate}
-                                </span>
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <button
+                                      className={`ds-caption whitespace-nowrap w-16 hover:text-foreground transition-colors flex items-center justify-center gap-1 ${
+                                        isOverdue ? "text-destructive font-medium" : "text-muted-foreground"
+                                      }`}
+                                      title="Change due date"
+                                    >
+                                      {formatDate(taskDates[task.id]) || (
+                                        <CalendarIcon className="size-3 opacity-0 group-hover:opacity-50 mx-auto" />
+                                      )}
+                                    </button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-auto p-0" align="end">
+                                    <CalendarWidget
+                                      mode="single"
+                                      selected={taskDates[task.id]}
+                                      onSelect={(date) => setTaskDate(task.id, date)}
+                                      captionLayout="dropdown"
+                                      startMonth={new Date(2025, 0)}
+                                      endMonth={new Date(2030, 11)}
+                                    />
+                                    {taskDates[task.id] && (
+                                      <div className="border-t px-3 py-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="w-full rounded-full text-muted-foreground"
+                                          onClick={() => setTaskDate(task.id, undefined)}
+                                        >
+                                          Remove date
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </PopoverContent>
+                                </Popover>
                               </div>
                             </div>
                           )
