@@ -393,10 +393,10 @@ export function ProjectManager() {
                               {/* Task title — click to toggle done, hover previews strikethrough */}
                               <span
                                 onClick={() => toggleDone(task.id)}
-                                className={`ds-small flex-1 cursor-pointer select-none rounded px-1 -mx-1 py-0.5 transition-all duration-200 ${
+                                className={`ds-small flex-1 cursor-pointer select-none rounded px-1 -mx-1 py-0.5 ${
                                   isDone
-                                    ? "line-through decoration-2 text-muted-foreground/50 hover:bg-secondary hover:text-muted-foreground/70"
-                                    : "hover:line-through hover:decoration-[5px] hover:decoration-foreground/50 hover:bg-destructive/8 hover:text-foreground"
+                                    ? "line-through decoration-2 decoration-muted-foreground text-muted-foreground/50 hover:bg-secondary hover:text-muted-foreground/70"
+                                    : "hover:line-through hover:decoration-2 hover:decoration-foreground/40 hover:bg-secondary/80"
                                 }`}
                                 title={isDone ? "Click to mark as incomplete" : "Click to complete"}
                               >
@@ -404,12 +404,14 @@ export function ProjectManager() {
                               </span>
 
                               {/* Right side info */}
-                              <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center shrink-0">
                                 {task.aiSuggested && (
-                                  <Sparkles className="size-3 text-ai-solid" />
+                                  <Sparkles className="size-3 text-ai-solid mr-2" />
                                 )}
-                                {statusLabel(currentStatus)}
-                                <span className="ds-caption text-muted-foreground whitespace-nowrap">
+                                <span className="w-24 text-right">
+                                  {statusLabel(currentStatus)}
+                                </span>
+                                <span className="ds-caption text-muted-foreground whitespace-nowrap w-14 text-right">
                                   {task.dueDate}
                                 </span>
                               </div>
