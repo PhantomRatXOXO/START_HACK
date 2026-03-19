@@ -255,20 +255,21 @@ export function ThesisPrep() {
       </Card>
 
       <Tabs defaultValue="tips">
-        <TabsList>
-          <TabsTrigger value="tips">
-            <Lightbulb className="size-4" />
-            Tips
-          </TabsTrigger>
-          <TabsTrigger value="literature">
-            <BookOpen className="size-4" />
-            Literature
-          </TabsTrigger>
-        </TabsList>
-
         {/* Tips */}
         <TabsContent value="tips">
-          <div className="mt-4 flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <TabsList>
+              <TabsTrigger value="tips">
+                <Lightbulb className="size-4" />
+                Tips
+              </TabsTrigger>
+              <TabsTrigger value="literature">
+                <BookOpen className="size-4" />
+                Literature
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          <div className="flex items-center justify-between mb-4">
             <p className="ds-small text-muted-foreground">
               {completedTips.length} of {TIPS.length} completed
             </p>
@@ -323,7 +324,19 @@ export function ThesisPrep() {
 
         {/* Literature */}
         <TabsContent value="literature">
-          <div className="mt-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between mb-4">
+            <TabsList>
+              <TabsTrigger value="tips">
+                <Lightbulb className="size-4" />
+                Tips
+              </TabsTrigger>
+              <TabsTrigger value="literature">
+                <BookOpen className="size-4" />
+                Literature
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          <div className="flex flex-col gap-3">
             {PAPERS.map((paper) => (
               <Card key={paper.id} className="transition-all duration-300 hover:shadow-md">
                 <CardContent className="flex flex-col gap-2">
