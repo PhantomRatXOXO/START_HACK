@@ -103,25 +103,25 @@ const STAGES: { id: Branch; label: string; description: string; icon: typeof Sea
   {
     id: "A",
     label: "Looking for a topic",
-    description: "I'm exploring options and haven't committed to a thesis topic yet",
+    description: "I'm exploring options and haven't committed to a thesis topic yet.",
     icon: Search,
   },
   {
     id: "B",
     label: "Already have a topic - Organizing timeline",
-    description: "I have a topic and need to plan methodology, timeline, and structure",
+    description: "I have a topic and need to plan methodology, timeline, and structure.",
     icon: CalendarClock,
   },
   {
     id: "C",
     label: "Conducting research",
-    description: "I'm in the middle of my thesis - gathering data, running experiments",
+    description: "I'm in the middle of my thesis - gathering data, running experiments.",
     icon: FlaskConical,
   },
   {
     id: "D",
     label: "Writing and Finalizing",
-    description: "I'm writing up my thesis and preparing for submission",
+    description: "I'm writing up my thesis and preparing for submission.",
     icon: PenLine,
   },
 ]
