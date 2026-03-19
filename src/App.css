@@ -199,11 +199,11 @@ html {
 
 /* Content scroll area */
 .scroll-area {
-  @apply h-full w-full px-6 lg:px-8;
+  @apply h-full w-full px-10 lg:px-16;
 }
 
 .scroll-area-content {
-  @apply pt-4 pb-8;
+  @apply pt-8 pb-12;
 }
 
 /* Content width */
