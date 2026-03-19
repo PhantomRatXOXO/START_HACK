@@ -197,7 +197,7 @@ export function ProjectManager({ savedPaperIds = [] }: { savedPaperIds?: string[
     return {
       id: "literature",
       name: "Literature",
-      weeks: `${savedPaperIds.length} paper${savedPaperIds.length === 1 ? "" : "s"} saved`,
+      weeks: "From Thesis Prep",
       color: "bg-foreground",
       tasks,
     }
