@@ -175,7 +175,8 @@ export default function App() {
     courses: <CourseSuggestions />,
     prep: <ThesisPrep savedPaperIds={savedPaperIds} setSavedPaperIds={setSavedPaperIds} />,
     project: <ProjectManager savedPaperIds={savedPaperIds} />,
-
+  }
+  
   const unreadCount = notifications.filter((n) => !n.read).length
 
   const markAllRead = () => {
