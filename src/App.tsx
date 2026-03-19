@@ -19,6 +19,12 @@ import {
   Sparkles,
   Moon,
   Sun,
+  Bell,
+  CheckCircle2,
+  MessageSquare,
+  FileText,
+  AlertCircle,
+  X,
 } from "lucide-react"
 
 import { OnboardingWizard } from "@/components/pages/OnboardingWizard"
@@ -88,10 +94,91 @@ function useTheme() {
   return { dark, toggle: () => setDark((d) => !d) }
 }
 
+interface Notification {
+  id: string
+  type: "approval" | "message" | "submission" | "reminder"
+  title: string
+  description: string
+  time: string
+  read: boolean
+}
+
+const MOCK_NOTIFICATIONS: Notification[] = [
+  {
+    id: "1",
+    type: "approval",
+    title: "Chapter 2 approved",
+    description: "Prof. Weber approved your Literature Review chapter with minor comments.",
+    time: "10 min ago",
+    read: false,
+  },
+  {
+    id: "2",
+    type: "message",
+    title: "New message from Lena M.",
+    description: "Hey! I saw we're working on similar topics. Want to compare notes on the NLP section?",
+    time: "1 hour ago",
+    read: false,
+  },
+  {
+    id: "3",
+    type: "submission",
+    title: "Methodology draft received",
+    description: "Your supervisor has received your methodology section and will review it shortly.",
+    time: "3 hours ago",
+    read: false,
+  },
+  {
+    id: "4",
+    type: "reminder",
+    title: "Deadline approaching",
+    description: "Your thesis outline is due in 3 days. Make sure to submit it via the Project Manager.",
+    time: "Yesterday",
+    read: true,
+  },
+  {
+    id: "5",
+    type: "approval",
+    title: "Research proposal accepted",
+    description: "Your thesis research proposal has been formally accepted by the department.",
+    time: "2 days ago",
+    read: true,
+  },
+  {
+    id: "6",
+    type: "message",
+    title: "Feedback from David L.",
+    description: "I left some comments on the transformer architecture section of your draft.",
+    time: "3 days ago",
+    read: true,
+  },
+]
+
+const NOTIF_ICONS = {
+  approval: CheckCircle2,
+  message: MessageSquare,
+  submission: FileText,
+  reminder: AlertCircle,
+}
+
 export default function App() {
   const [page, setPage] = useState<Page>("onboarding")
   const [collapsed, setCollapsed] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS)
   const theme = useTheme()
+
+  const unreadCount = notifications.filter((n) => !n.read).length
+
+  const markAllRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  }
+
+  const markRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    )
+  }
 
   const renderPage = () => {
     switch (page) {
@@ -221,8 +308,87 @@ export default function App() {
         </aside>
 
         {/* Main content */}
-        {/* Main content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto relative">
+          {/* Top bar with notification bell */}
+          <div className="sticky top-0 z-20 flex justify-end px-6 pt-3 pb-1">
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative"
+              >
+                <Bell className="size-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                    {unreadCount}
+                  </span>
+                )}
+              </Button>
+
+              {/* Notification panel */}
+              {showNotifications && (
+                <div className="absolute right-0 top-full mt-2 w-96 rounded-lg border bg-background shadow-lg z-30">
+                  <div className="flex items-center justify-between px-4 py-3 border-b">
+                    <span className="text-sm font-semibold">Notifications</span>
+                    <div className="flex items-center gap-2">
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllRead}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setShowNotifications(false)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="max-h-[400px] overflow-y-auto peer-scroll">
+                    {notifications.map((notif) => {
+                      const Icon = NOTIF_ICONS[notif.type]
+                      return (
+                        <button
+                          key={notif.id}
+                          onClick={() => markRead(notif.id)}
+                          className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-secondary/50 ${
+                            !notif.read ? "bg-secondary/30" : ""
+                          }`}
+                        >
+                          <div className={`mt-0.5 shrink-0 rounded-full p-1.5 ${
+                            !notif.read ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"
+                          }`}>
+                            <Icon className="size-3.5" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm ${!notif.read ? "font-semibold" : ""}`}>
+                                {notif.title}
+                              </span>
+                              {!notif.read && (
+                                <span className="size-1.5 rounded-full bg-primary shrink-0" />
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                              {notif.description}
+                            </p>
+                            <span className="text-[10px] text-muted-foreground mt-1 block">
+                              {notif.time}
+                            </span>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="scroll-area">
             <div className="scroll-area-content">{renderPage()}</div>
           </div>
