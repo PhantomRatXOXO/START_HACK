@@ -94,19 +94,12 @@ export default function App() {
   const theme = useTheme()
   const [savedPaperIds, setSavedPaperIds] = useState<string[]>([])
 
-  const renderPage = () => {
-    switch (page) {
-      case "onboarding":
-        return <OnboardingWizard />
-      case "peers":
-        return <PeerNetwork />
-      case "courses":
-        return <CourseSuggestions />
-      case "prep":
-        return <ThesisPrep savedPaperIds={savedPaperIds} setSavedPaperIds={setSavedPaperIds} />
-      case "project":
-        return <ProjectManager savedPaperIds={savedPaperIds} />
-    }
+  const pages = {
+    onboarding: <OnboardingWizard />,
+    peers: <PeerNetwork />,
+    courses: <CourseSuggestions />,
+    prep: <ThesisPrep savedPaperIds={savedPaperIds} setSavedPaperIds={setSavedPaperIds} />,
+    project: <ProjectManager savedPaperIds={savedPaperIds} />,
   }
 
   return (
@@ -225,7 +218,11 @@ export default function App() {
         {/* Main content */}
         <main className="flex-1 overflow-auto">
           <div className="scroll-area">
-            <div className="scroll-area-content">{renderPage()}</div>
+            {NAV_ITEMS.map((item) => (
+              <div key={item.id} className={page === item.id ? "scroll-area-content" : "hidden"}>
+                {pages[item.id]}
+              </div>
+            ))}
           </div>
         </main>
       </div>
