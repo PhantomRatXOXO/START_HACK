@@ -36,7 +36,7 @@ interface Tip {
   isNew: boolean
 }
 
-interface Paper {
+export interface Paper {
   id: string
   title: string
   authors: string
@@ -110,7 +110,7 @@ const TIPS: Tip[] = [
   },
 ]
 
-const PAPERS: Paper[] = [
+export const PAPERS: Paper[] = [
   {
     id: "1",
     title: "Skills-Based Hiring and the Practice of Student Assessment in Higher Education",
@@ -316,7 +316,13 @@ function PaperCard({
   )
 }
 
-export function ThesisPrep() {
+export function ThesisPrep({
+  savedPaperIds,
+  setSavedPaperIds,
+}: {
+  savedPaperIds: string[]
+  setSavedPaperIds: React.Dispatch<React.SetStateAction<string[]>>
+}) {
   const [completedTips, setCompletedTips] = useState<string[]>([])
   const [savedPaperIds, setSavedPaperIds] = useState<string[]>(() => {
     try {

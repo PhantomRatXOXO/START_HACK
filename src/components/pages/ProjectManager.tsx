@@ -1,10 +1,11 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar as CalendarWidget } from "@/components/ui/calendar"
+import { PAPERS } from "@/components/pages/ThesisPrep"
 import {
   Sparkles,
   Calendar as CalendarIcon,
@@ -181,7 +182,30 @@ function statusLabel(status: TaskStatus) {
   }
 }
 
-export function ProjectManager() {
+export function ProjectManager({ savedPaperIds = [] }: { savedPaperIds?: string[] }) {
+  // Build a "Literature" phase from saved papers in Thesis Prep
+  const literaturePhase: Phase = useMemo(() => {
+    const tasks: Task[] = savedPaperIds.map((paperId) => {
+      const paper = PAPERS.find((p) => p.id === paperId)
+      return {
+        id: `lit-${paperId}`,
+        title: `Read "${paper?.title ?? "Unknown paper"}"`,
+        status: "upcoming" as TaskStatus,
+      }
+    })
+    return {
+      id: "literature",
+      name: "Literature",
+      weeks: "From Thesis Prep",
+      color: "bg-foreground",
+      tasks,
+    }
+  }, [savedPaperIds])
+
+  const allPhases = useMemo(() => {
+    return [literaturePhase, ...PHASES]
+  }, [literaturePhase])
+
   const [expandedPhases, setExpandedPhases] = useState<string[]>(["planning"])
   const [taskStates, setTaskStates] = useState<Record<string, TaskStatus>>(() => {
     const initial: Record<string, TaskStatus> = {}
@@ -311,14 +335,11 @@ export function ProjectManager() {
       setTaskTitles((prev) => ({ ...prev, [taskId]: trimmed }))
     } else {
       // Empty title — delete the task (find which phase it belongs to)
-      for (const phase of PHASES) {
-        // Check if it's a default task
-        if (phase.tasks.some((t) => t.id === taskId)) {
-          removeTask(phase.id, taskId)
-          break
-        }
-        // Check if it's a custom task
-        if ((customTasks[phase.id] || []).some((t) => t.id === taskId)) {
+      for (const phase of allPhases) {
+        if (
+          phase.tasks.some((t) => t.id === taskId) ||
+          (customTasks[phase.id] || []).some((t) => t.id === taskId)
+        ) {
           removeTask(phase.id, taskId)
           break
         }
@@ -356,9 +377,12 @@ export function ProjectManager() {
     })
   }
 
-  const totalTasks = PHASES.reduce((sum, p) => sum + allPhaseTasks(p).length, 0)
+  const totalTasks = allPhases.reduce((sum, p) => sum + allPhaseTasks(p).length, 0)
   const doneTasks = Object.values(taskStates).filter((s) => s === "done").length
   const inProgressTasks = Object.values(taskStates).filter((s) => s === "in-progress").length
+  const litTasks = allPhaseTasks(literaturePhase)
+  const papersRead = litTasks.filter((t) => (taskStates[t.id] || t.status) === "done").length
+  const totalPapers = litTasks.length
 
   return (
     <div>
@@ -374,7 +398,7 @@ export function ProjectManager() {
         {/* Main content */}
         <div>
           {/* Progress overview */}
-          <div className="mb-6 grid grid-cols-3 gap-4">
+          <div className="mb-6 grid grid-cols-4 gap-4">
             <Card>
               <CardContent className="flex items-center gap-3 py-1">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
@@ -394,6 +418,17 @@ export function ProjectManager() {
                 <div>
                   <div className="ds-title-cards">{inProgressTasks}</div>
                   <div className="ds-caption text-muted-foreground">In progress</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex items-center gap-3 py-1">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
+                  <BookOpen className="size-4" />
+                </div>
+                <div>
+                  <div className="ds-title-cards">{papersRead}</div>
+                  <div className="ds-caption text-muted-foreground">Papers read</div>
                 </div>
               </CardContent>
             </Card>
@@ -449,7 +484,7 @@ export function ProjectManager() {
 
           {/* Phase list */}
           <div className="flex flex-col gap-4">
-            {PHASES.map((phase) => {
+            {allPhases.map((phase) => {
               const expanded = expandedPhases.includes(phase.id)
               const phaseTasks = allPhaseTasks(phase)
               const phaseDone = phaseTasks.filter((t) => taskStates[t.id] === "done").length
@@ -492,7 +527,7 @@ export function ProjectManager() {
                     <CardContent>
                       <div className="flex flex-col gap-0.5">
                         {phaseTasks.map((task) => {
-                          const currentStatus = taskStates[task.id]
+                          const currentStatus = taskStates[task.id] || task.status
                           const isDone = currentStatus === "done"
                           const isInProgress = currentStatus === "in-progress"
                           const taskDate = taskDates[task.id]

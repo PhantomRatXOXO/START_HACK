@@ -167,6 +167,14 @@ export default function App() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS)
   const theme = useTheme()
+  const [savedPaperIds, setSavedPaperIds] = useState<string[]>([])
+
+  const pages = {
+    onboarding: <OnboardingWizard />,
+    peers: <PeerNetwork />,
+    courses: <CourseSuggestions />,
+    prep: <ThesisPrep savedPaperIds={savedPaperIds} setSavedPaperIds={setSavedPaperIds} />,
+    project: <ProjectManager savedPaperIds={savedPaperIds} />,
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
@@ -390,7 +398,11 @@ export default function App() {
           </div>
 
           <div className="scroll-area">
-            <div className="scroll-area-content">{renderPage()}</div>
+            {NAV_ITEMS.map((item) => (
+              <div key={item.id} className={page === item.id ? "scroll-area-content" : "hidden"}>
+                {pages[item.id]}
+              </div>
+            ))}
           </div>
         </main>
       </div>
